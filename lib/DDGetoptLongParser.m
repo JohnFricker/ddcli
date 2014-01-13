@@ -109,9 +109,10 @@ dd_getopt_long_only(int nargc, char * const *nargv, const char *options,
     while ((currentOption->longOption != nil) ||
            (currentOption->shortOption != 0))
     {
-        [self addLongOption: currentOption->longOption
+        NSString *longOpt = @(currentOption->longOption);
+        [self addLongOption: longOpt
                 shortOption: currentOption->shortOption
-                        key: [self optionToKey: currentOption->longOption]
+                        key: [self optionToKey: longOpt]
             argumentOptions: currentOption->argumentOptions];
         currentOption++;
     }
@@ -157,10 +158,8 @@ dd_getopt_long_only(int nargc, char * const *nargv, const char *options,
     }
     [self addOption];
     
-    NSArray * optionInfo = [NSArray arrayWithObjects:
-        key, [NSNumber numberWithInt: argumentOptions], nil];
-    [_optionInfoMap setObject: optionInfo
-                       forKey: [NSNumber numberWithInt: shortOptionValue]];
+    NSArray * optionInfo = @[key, [NSNumber numberWithInt: argumentOptions]];
+    _optionInfoMap[@(shortOptionValue)] = optionInfo;
     
     [_utf8Data addObject: utf8Data];
 }
@@ -189,7 +188,7 @@ dd_getopt_long_only(int nargc, char * const *nargv, const char *options,
     int i;
     for (i = 0; i < argc; i++)
     {
-        NSString * argument = [arguments objectAtIndex: i];
+        NSString * argument = arguments[i];
         argv[i] = (char *) [argument UTF8String];
     }
     argv[i] = 0;
@@ -213,7 +212,7 @@ dd_getopt_long_only(int nargc, char * const *nargv, const char *options,
 	optind = 1;
     while ((ch = _getoptFunction(argc, argv, optionString, options, &longOptionIndex)) != -1)
     {
-        NSString * last_argv = [NSString stringWithUTF8String: argv[optind-1]];
+        NSString * last_argv = @(argv[optind-1]);
         if (ch == ':')
         {
             [self handleMissingArgument: last_argv command: command];
@@ -227,22 +226,22 @@ dd_getopt_long_only(int nargc, char * const *nargv, const char *options,
         
         NSString * nsoptarg = nil;
         if (optarg != NULL)
-            nsoptarg = [NSString stringWithUTF8String: optarg];
+            nsoptarg = @(optarg);
         
-        NSArray * optionInfo = [_optionInfoMap objectForKey: [NSNumber numberWithInt: ch]];
+        NSArray * optionInfo = _optionInfoMap[@(ch)];
         NSAssert(optionInfo != nil, @"optionInfo should not be nil");
 
         if (optionInfo != nil)
         {
-            NSString * key = [optionInfo objectAtIndex: 0];
-            int argumentOptions = [[optionInfo objectAtIndex: 1] intValue];
+            NSString * key = optionInfo[0];
+            int argumentOptions = [optionInfo[1] intValue];
             if (argumentOptions == DDGetoptNoArgument) {
 				BOOL boolValue = YES;
 				if ([key hasPrefix:@"no-"]) {
 					boolValue = NO;
 					key = [key substringFromIndex:3];
 				}
-                [_target setValue: [NSNumber numberWithBool: boolValue] forKey: key];
+                [_target setValue: @(boolValue) forKey: key];
 			}
             else
                 [_target setValue: nsoptarg forKey: key];
@@ -256,7 +255,7 @@ dd_getopt_long_only(int nargc, char * const *nargv, const char *options,
 	}
 	else
 	{
-		return [NSArray array];
+		return @[];
 	}
 }
 
